@@ -61,7 +61,11 @@ public:
   mvec<T> unit() const;
   void normalize();
   mvec<T> cross(const mvec<T> &a) const;
-  bool approx_equal(const mvec<T> &a, T epsilon) const;
+  bool approx_equal_absolute(const mvec<T> &a, T epsilon) const;
+  bool approx_equal_relative(const mvec<T> &a, T epsilon) const;
+  bool has_nan() const;
+  bool has_infinity() const;
+  bool is_finite() const;
 };
 template <FloatingPoint T> T *mvec<T>::data() { return data_.data(); }
 template <FloatingPoint T> const T *mvec<T>::data() const { return data_.data(); }
@@ -90,8 +94,6 @@ template <FloatingPoint T> mvec<T> &mvec<T>::operator*=(T scalar) {
   return *this;
 }
 template <FloatingPoint T> mvec<T> &mvec<T>::operator/=(T scalar) {
-  if (scalar == 0)
-    throw std::invalid_argument("Cannot divide by 0!");
   for (auto &it : *this) {
     it /= scalar;
   }
@@ -157,8 +159,8 @@ template <FloatingPoint T> T mvec<T>::magnitude() const {
 }
 template <FloatingPoint T> mvec<T> mvec<T>::unit() const {
   T mag = magnitude();
-  if (mag == 0)
-    throw std::invalid_argument("Cannot normalize a zero vector!");
+  if (mag == T{})
+    throw std::domain_error("Cannot normalize a zero vector!");
   return *this / mag;
 }
 template <FloatingPoint T> void mvec<T>::normalize() { *this = this->unit(); }
@@ -171,16 +173,50 @@ template <FloatingPoint T> mvec<T> mvec<T>::cross(const mvec<T> &a) const {
   out.z() = x() * a.y() - y() * a.x();
   return out;
 }
-template <FloatingPoint T> bool mvec<T>::approx_equal(const mvec<T> &a, T epsilon) const {
+template <FloatingPoint T> bool mvec<T>::approx_equal_absolute(const mvec<T> &a, T epsilon) const {
   if (epsilon < 0)
     throw std::invalid_argument("Epsilon cannot be negative!");
   if (size() != a.size())
     return false;
   for (size_t i = 0; i < size(); ++i) {
-    if (std::abs((*this)[i] - a[i]) > epsilon)
+    T lhs = (*this)[i];
+    T rhs = a[i];
+    if (std::isnan(lhs) || std::isnan(rhs))
+      return false;
+    if (lhs == rhs)
+      continue;
+    if (std::abs(lhs - rhs) > epsilon)
       return false;
   }
   return true;
+}
+template <FloatingPoint T> bool mvec<T>::approx_equal_relative(const mvec<T> &a, T epsilon) const {
+  if (epsilon < 0)
+    throw std::invalid_argument("Epsilon cannot be negative!");
+  if (size() != a.size())
+    return false;
+  for (size_t i = 0; i < size(); ++i) {
+    T lhs = (*this)[i];
+    T rhs = a[i];
+    if (std::isnan(lhs) || std::isnan(rhs))
+      return false;
+    if (lhs == rhs)
+      continue;
+    if (std::isinf(lhs) || std::isinf(rhs))
+      return false;
+    if (std::abs(lhs - rhs) > epsilon * std::max(std::abs(lhs), std::abs(rhs)))
+      return false;
+  }
+  return true;
+}
+template <FloatingPoint T> bool mvec<T>::has_nan() const {
+  return std::any_of(begin(), end(), [](T x) { return std::isnan(x); });
+}
+template <FloatingPoint T> bool mvec<T>::has_infinity() const {
+  return std::any_of(begin(), end(), [](T x) { return std::isinf(x); });
+}
+template <FloatingPoint T> bool mvec<T>::is_finite() const {
+  return std::all_of(begin(), end(), [](T x) { return std::isfinite(x); });
 }
 
 template <FloatingPoint T> std::ostream &operator<<(std::ostream &os, const mvec<T> &a) {
@@ -196,9 +232,18 @@ template <FloatingPoint T> std::ostream &operator<<(std::ostream &os, const mvec
 template <FloatingPoint T> mvec<T> operator*(T scalar, const mvec<T> &a) { return a * scalar; }
 template <FloatingPoint T> T dot(const mvec<T> &a, const mvec<T> &b) { return a.dot(b); }
 template <FloatingPoint T> mvec<T> cross(const mvec<T> &a, const mvec<T> &b) { return a.cross(b); }
-template <FloatingPoint T> bool approx_equal(const mvec<T> &a, const mvec<T> &b, T epsilon) {
-  return a.approx_equal(b, epsilon);
+template <FloatingPoint T> bool approx_equal_absolute(const mvec<T> &a, const mvec<T> &b, T epsilon) {
+  return a.approx_equal_absolute(b, epsilon);
 }
+template <FloatingPoint T> bool approx_equal_relative(const mvec<T> &a, const mvec<T> &b, T epsilon) {
+  return a.approx_equal_relative(b, epsilon);
+}
+template <FloatingPoint T> bool is_nan(T value) { return std::isnan(value); }
+template <FloatingPoint T> bool is_infinite(T value) { return std::isinf(value); }
+template <FloatingPoint T> bool is_finite(T value) { return std::isfinite(value); }
+template <FloatingPoint T> bool has_nan(const mvec<T> &a) { return a.has_nan(); }
+template <FloatingPoint T> bool has_infinity(const mvec<T> &a) { return a.has_infinity(); }
+template <FloatingPoint T> bool is_finite(const mvec<T> &a) { return a.is_finite(); }
 } // namespace smlib
 
 #endif
