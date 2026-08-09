@@ -2,10 +2,10 @@
 
 #include <cassert>
 #include <cmath>
-#include <format>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 using smlib::mvec;
 
@@ -56,6 +56,42 @@ void test_access() {
   assert(threw);
 }
 
+void test_const_access() {
+  const mvec<float> a{1.0f, 2.0f, 3.0f};
+
+  assert(a[0] == 1.0f);
+  assert(a.at(1) == 2.0f);
+  assert(a.x() == 1.0f);
+  assert(a.y() == 2.0f);
+  assert(a.z() == 3.0f);
+
+  assert(a.data()[0] == 1.0f);
+  assert(a.data()[1] == 2.0f);
+  assert(a.data()[2] == 3.0f);
+
+  float sum = 0.0f;
+
+  for (float x : a)
+    sum += x;
+
+  assert(sum == 6.0f);
+}
+
+void test_data() {
+  mvec<float> a{1.0f, 2.0f, 3.0f};
+
+  float *data = a.data();
+
+  assert(data != nullptr);
+  assert(data[0] == 1.0f);
+  assert(data[1] == 2.0f);
+  assert(data[2] == 3.0f);
+
+  data[1] = 20.0f;
+
+  assert(a[1] == 20.0f);
+}
+
 void test_arithmetic() {
   mvec<float> a{1.0f, 2.0f, 3.0f};
   mvec<float> b{4.0f, 5.0f, 6.0f};
@@ -86,6 +122,23 @@ void test_arithmetic() {
   c = a;
   c /= 2.0f;
   assert(c == mvec<float>{0.5f, 1.0f, 1.5f});
+}
+
+void test_copy_move() {
+  mvec<float> a{1.0f, 2.0f, 3.0f};
+
+  mvec<float> b = a;
+
+  assert(b == a);
+
+  b[0] = 100.0f;
+
+  assert(a[0] == 1.0f);
+  assert(b[0] == 100.0f);
+
+  mvec<float> c = std::move(b);
+
+  assert(c == mvec<float>{100.0f, 2.0f, 3.0f});
 }
 
 void test_size_errors() {
@@ -145,7 +198,64 @@ void test_magnitude() {
   assert(a.magnitude() == 5.0f);
 
   mvec<float> b{0.0f, 0.0f, 0.0f};
+
   assert(b.magnitude() == 0.0f);
+}
+
+void test_reductions() {
+  mvec<float> a{1.0f, 2.0f, 3.0f};
+
+  assert(a.sum() == 6.0f);
+  assert(a.magnitude_squared() == 14.0f);
+
+  mvec<float> empty;
+
+  assert(empty.sum() == 0.0f);
+  assert(empty.magnitude_squared() == 0.0f);
+}
+
+void test_min_max() {
+  mvec<float> a{3.0f, -1.0f, 5.0f, 2.0f};
+
+  assert(a.min() == -1.0f);
+  assert(a.max() == 5.0f);
+
+  mvec<float> positive{2.0f, 4.0f, 6.0f};
+
+  assert(positive.min() == 2.0f);
+  assert(positive.max() == 6.0f);
+
+  mvec<float> negative{-6.0f, -4.0f, -2.0f};
+
+  assert(negative.min() == -6.0f);
+  assert(negative.max() == -2.0f);
+
+  mvec<float> single{42.0f};
+
+  assert(single.min() == 42.0f);
+  assert(single.max() == 42.0f);
+
+  mvec<float> empty;
+
+  bool threw = false;
+
+  try {
+    empty.min();
+  } catch (const std::domain_error &) {
+    threw = true;
+  }
+
+  assert(threw);
+
+  threw = false;
+
+  try {
+    empty.max();
+  } catch (const std::domain_error &) {
+    threw = true;
+  }
+
+  assert(threw);
 }
 
 void test_unit() {
@@ -203,6 +313,19 @@ void test_cross() {
   assert(threw);
 }
 
+void test_elementwise_math() {
+  mvec<float> a{-1.5f, 2.2f, 9.0f};
+
+  assert(a.abs() == mvec<float>{1.5f, 2.2f, 9.0f});
+  assert(a.floor() == mvec<float>{-2.0f, 2.0f, 9.0f});
+  assert(a.ceil() == mvec<float>{-1.0f, 3.0f, 9.0f});
+  assert(a.round() == mvec<float>{-2.0f, 2.0f, 9.0f});
+
+  mvec<float> b{1.0f, 4.0f, 9.0f};
+
+  assert(b.sqrt() == mvec<float>{1.0f, 2.0f, 3.0f});
+}
+
 void test_fill_resize() {
   mvec<float> a{1.0f, 2.0f, 3.0f};
 
@@ -216,10 +339,13 @@ void test_fill_resize() {
   assert(a[0] == 5.0f);
   assert(a[1] == 5.0f);
   assert(a[2] == 5.0f);
+  assert(a[3] == 0.0f);
+  assert(a[4] == 0.0f);
 
   a.resize(2);
 
   assert(a.size() == 2);
+  assert(a == mvec<float>{5.0f, 5.0f});
 }
 
 void test_iterators() {
@@ -233,6 +359,28 @@ void test_iterators() {
   assert(sum == 6.0f);
 
   assert(a.cbegin() != a.cend());
+}
+
+void test_zero_checks() {
+  mvec<float> zero{0.0f, 0.0f, 0.0f};
+  mvec<float> a{0.0f, 0.0001f, 0.0f};
+
+  assert(zero.is_zero());
+  assert(!a.is_zero());
+
+  assert(zero.is_near_zero(0.001f));
+  assert(a.is_near_zero(0.001f));
+  assert(!a.is_near_zero(0.00001f));
+
+  bool threw = false;
+
+  try {
+    zero.is_near_zero(-1.0f);
+  } catch (const std::invalid_argument &) {
+    threw = true;
+  }
+
+  assert(threw);
 }
 
 void test_approx_equal_absolute() {
@@ -307,8 +455,6 @@ void test_infinity() {
   assert(smlib::is_infinite(inf));
   assert(!smlib::is_infinite(1.0f));
 
-  // Exact matching infinities are accepted by your current
-  // approx_equal_relative implementation.
   mvec<float> positive_inf{inf};
   mvec<float> another_positive_inf{inf};
 
@@ -320,8 +466,6 @@ void test_infinity() {
 }
 
 void test_division_by_zero() {
-  const float inf = std::numeric_limits<float>::infinity();
-
   mvec<float> a{1.0f, -2.0f, 0.0f};
 
   auto result = a / 0.0f;
@@ -332,8 +476,6 @@ void test_division_by_zero() {
 
   assert(result[0] > 0.0f);
   assert(result[1] < 0.0f);
-
-  (void)inf;
 }
 
 void test_free_functions() {
@@ -351,6 +493,15 @@ void test_free_functions() {
   assert(!smlib::is_finite(std::numeric_limits<float>::infinity()));
 }
 
+template <typename T> void test_type() {
+  mvec<T> a{T{1}, T{2}, T{3}};
+  mvec<T> b{T{4}, T{5}, T{6}};
+
+  assert(a + b == mvec<T>{T{5}, T{7}, T{9}});
+  assert(a.dot(b) == T{32});
+  assert(a.sum() == T{6});
+}
+
 void test_output() {
   mvec<float> a{1.0f, 2.0f, 3.0f};
 
@@ -366,8 +517,17 @@ int main() {
   test_access();
   std::cout << "[PASS] access\n";
 
+  test_const_access();
+  std::cout << "[PASS] const access\n";
+
+  test_data();
+  std::cout << "[PASS] data\n";
+
   test_arithmetic();
   std::cout << "[PASS] arithmetic\n";
+
+  test_copy_move();
+  std::cout << "[PASS] copy/move\n";
 
   test_size_errors();
   std::cout << "[PASS] size errors\n";
@@ -378,17 +538,29 @@ int main() {
   test_magnitude();
   std::cout << "[PASS] magnitude\n";
 
+  test_reductions();
+  std::cout << "[PASS] reductions\n";
+
+  test_min_max();
+  std::cout << "[PASS] min/max\n";
+
   test_unit();
   std::cout << "[PASS] unit\n";
 
   test_cross();
   std::cout << "[PASS] cross\n";
 
+  test_elementwise_math();
+  std::cout << "[PASS] elementwise math\n";
+
   test_fill_resize();
   std::cout << "[PASS] fill/resize\n";
 
   test_iterators();
   std::cout << "[PASS] iterators\n";
+
+  test_zero_checks();
+  std::cout << "[PASS] zero checks\n";
 
   test_approx_equal_absolute();
   std::cout << "[PASS] absolute comparison\n";
@@ -408,8 +580,15 @@ int main() {
   test_free_functions();
   std::cout << "[PASS] free functions\n";
 
+  test_type<float>();
+  std::cout << "[PASS] float\n";
+
+  test_type<double>();
+  std::cout << "[PASS] double\n";
+
   test_output();
 
   std::cout << "\nAll tests passed!\n";
+
   return 0;
 }
