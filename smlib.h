@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <ostream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace smlib {
@@ -68,6 +69,16 @@ public:
   {
     return data_[2];
   }
+  constexpr T &w() noexcept
+    requires(N >= 4)
+  {
+    return data_[3];
+  }
+  constexpr const T &w() const noexcept
+    requires(N >= 4)
+  {
+    return data_[3];
+  }
   constexpr auto begin() noexcept { return data_.begin(); }
   constexpr auto end() noexcept { return data_.end(); }
   constexpr auto begin() const noexcept { return data_.begin(); }
@@ -81,34 +92,33 @@ public:
   constexpr auto crbegin() const noexcept { return data_.crbegin(); }
   constexpr auto crend() const noexcept { return data_.crend(); }
   constexpr T dot(const mvec<T, N> &a) const noexcept;
-  constexpr T magnitude() const noexcept;
+  T magnitude() const noexcept;
   constexpr T magnitude_squared() const noexcept { return dot(*this); };
   constexpr T sum() const noexcept;
   constexpr T min() const noexcept { return *std::min_element(begin(), end()); }
   constexpr T max() const noexcept { return *std::max_element(begin(), end()); }
-  constexpr mvec<T, N> unit() const noexcept { return *this / magnitude(); }
-  constexpr void normalize() noexcept { *this = unit(); };
+  mvec<T, N> unit() const;
+  void normalize() { *this = unit(); };
   constexpr mvec<T, N> cross(const mvec<T, N> &a) const noexcept
     requires(N == 3);
-  constexpr mvec<T, N> abs() const noexcept;
-  constexpr mvec<T, N> floor() const noexcept;
-  constexpr mvec<T, N> ceil() const noexcept;
-  constexpr mvec<T, N> round() const noexcept;
-  constexpr mvec<T, N> sqrt() const noexcept;
-  constexpr bool approx_equal_absolute(const mvec<T, N> &a, T epsilon) const;
-  constexpr bool approx_equal_relative(const mvec<T, N> &a, T epsilon) const;
-  constexpr bool has_nan() const noexcept;
-  constexpr bool has_infinity() const noexcept;
-  constexpr bool is_finite() const noexcept;
+  mvec<T, N> abs() const noexcept;
+  mvec<T, N> floor() const noexcept;
+  mvec<T, N> ceil() const noexcept;
+  mvec<T, N> round() const noexcept;
+  mvec<T, N> sqrt() const noexcept;
+  bool approx_equal(const mvec<T, N> &a, T epsilon) const;
+  bool has_nan() const noexcept;
+  bool has_infinity() const noexcept;
+  bool is_finite() const noexcept;
   constexpr bool is_zero() const noexcept;
-  constexpr bool is_near_zero(T epsilon) const;
+  bool is_near_zero(T epsilon) const;
 };
-/*
-template<FloatingPoint T, std::size_t N> requires(N>0) class mmat {
+
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0, N > 0)
+class mmat {
 private:
-  const std::size_t rows_;
-  const std::size_t cols_;
-  std::vector<T> data_;
+  std::array<T, M * N> data_;
 
 public:
   mmat(std::size_t rows, std::size_t cols);
@@ -118,19 +128,7 @@ public:
   const T *data() const;
   T &operator()(std::size_t row, std::size_t col);
   const T &operator()(std::size_t row, std::size_t col) const;
-  mmat<T> &operator+=(const mmat<T> &a);
-  mmat<T> &operator-=(const mmat<T> &a);
-  mmat<T> &operator*=(T scalar);
-  mmat<T> &operator/=(T scalar);
-  mmat<T> operator+(const mmat<T> &a) const;
-  mmat<T> operator-(const mmat<T> &a) const;
-  mmat<T> operator*(T scalar) const;
-  mmat<T> operator/(T scalar) const;
-  mmat<T> operator+() const;
-  mmat<T> operator-() const;
-  bool operator==(const mmat<T> &a) const;
-  bool operator!=(const mmat<T> &a) const;
-};*/
+};
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator+=(const mvec<T, N> &a) noexcept {
@@ -202,7 +200,7 @@ constexpr T mvec<T, N>::dot(const mvec<T, N> &a) const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr T mvec<T, N>::magnitude() const noexcept {
+T mvec<T, N>::magnitude() const noexcept {
   T out = T{0};
   for (auto x : *this) {
     out = std::hypot(out, x);
@@ -219,7 +217,14 @@ constexpr T mvec<T, N>::sum() const noexcept {
   }
   return out;
 }
-
+template <FloatingPoint T, std::size_t N>
+  requires(N > 0)
+mvec<T, N> mvec<T, N>::unit() const {
+  T mag = magnitude();
+  if (mag == 0)
+    throw std::domain_error("Cannot normalize a zero vector!");
+  return *this / mag;
+}
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::cross(const mvec<T, N> &a) const noexcept
@@ -233,7 +238,7 @@ constexpr mvec<T, N> mvec<T, N>::cross(const mvec<T, N> &a) const noexcept
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr mvec<T, N> mvec<T, N>::abs() const noexcept {
+mvec<T, N> mvec<T, N>::abs() const noexcept {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::abs(data_[i]);
@@ -242,7 +247,7 @@ constexpr mvec<T, N> mvec<T, N>::abs() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr mvec<T, N> mvec<T, N>::floor() const noexcept {
+mvec<T, N> mvec<T, N>::floor() const noexcept {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::floor(data_[i]);
@@ -251,7 +256,7 @@ constexpr mvec<T, N> mvec<T, N>::floor() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr mvec<T, N> mvec<T, N>::ceil() const noexcept {
+mvec<T, N> mvec<T, N>::ceil() const noexcept {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::ceil(data_[i]);
@@ -260,7 +265,7 @@ constexpr mvec<T, N> mvec<T, N>::ceil() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr mvec<T, N> mvec<T, N>::round() const noexcept {
+mvec<T, N> mvec<T, N>::round() const noexcept {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::round(data_[i]);
@@ -269,7 +274,7 @@ constexpr mvec<T, N> mvec<T, N>::round() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr mvec<T, N> mvec<T, N>::sqrt() const noexcept {
+mvec<T, N> mvec<T, N>::sqrt() const noexcept {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::sqrt(data_[i]);
@@ -278,7 +283,7 @@ constexpr mvec<T, N> mvec<T, N>::sqrt() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr bool mvec<T, N>::approx_equal_absolute(const mvec<T, N> &a, T epsilon) const {
+bool mvec<T, N>::approx_equal(const mvec<T, N> &a, T epsilon) const {
   if (epsilon < T{0})
     throw std::invalid_argument("Epsilon cannot be negative!");
   for (std::size_t i = 0; i < N; ++i) {
@@ -295,36 +300,17 @@ constexpr bool mvec<T, N>::approx_equal_absolute(const mvec<T, N> &a, T epsilon)
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr bool mvec<T, N>::approx_equal_relative(const mvec<T, N> &a, T epsilon) const {
-  if (epsilon < T{0})
-    throw std::invalid_argument("Epsilon cannot be negative!");
-  for (std::size_t i = 0; i < N; ++i) {
-    T lhs = (*this)[i];
-    T rhs = a[i];
-    if (std::isnan(lhs) || std::isnan(rhs))
-      return false;
-    if (lhs == rhs)
-      continue;
-    if (std::isinf(lhs) || std::isinf(rhs))
-      return false;
-    if (std::abs(lhs - rhs) > epsilon * std::max(std::abs(lhs), std::abs(rhs)))
-      return false;
-  }
-  return true;
-}
-template <FloatingPoint T, std::size_t N>
-  requires(N > 0)
-constexpr bool mvec<T, N>::has_nan() const noexcept {
+bool mvec<T, N>::has_nan() const noexcept {
   return std::any_of(begin(), end(), [](T x) { return std::isnan(x); });
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr bool mvec<T, N>::has_infinity() const noexcept {
+bool mvec<T, N>::has_infinity() const noexcept {
   return std::any_of(begin(), end(), [](T x) { return std::isinf(x); });
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr bool mvec<T, N>::is_finite() const noexcept {
+bool mvec<T, N>::is_finite() const noexcept {
   return std::all_of(begin(), end(), [](T x) { return std::isfinite(x); });
 }
 template <FloatingPoint T, std::size_t N>
@@ -334,10 +320,9 @@ constexpr bool mvec<T, N>::is_zero() const noexcept {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-constexpr bool mvec<T, N>::is_near_zero(T epsilon) const {
+bool mvec<T, N>::is_near_zero(T epsilon) const {
   if (epsilon < T{0})
     throw std::invalid_argument("Epsilon cannot be negative!");
-
   return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
 }
 
@@ -355,32 +340,32 @@ std::ostream &operator<<(std::ostream &os, const mvec<T, N> &a) {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-mvec<T, N> operator*(T scalar, const mvec<T, N> &a) {
+constexpr mvec<T, N> operator*(T scalar, const mvec<T, N> &a) {
   return a * scalar;
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-T dot(const mvec<T, N> &a, const mvec<T, N> &b) {
+constexpr T dot(const mvec<T, N> &a, const mvec<T, N> &b) {
   return a.dot(b);
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-T sum(const mvec<T, N> &a) {
+constexpr T sum(const mvec<T, N> &a) {
   return a.sum();
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-T min(const mvec<T, N> &a) {
+constexpr T min(const mvec<T, N> &a) {
   return a.min();
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-T max(const mvec<T, N> &a) {
+constexpr T max(const mvec<T, N> &a) {
   return a.max();
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-mvec<T, N> cross(const mvec<T, N> &a, const mvec<T, N> &b) {
+constexpr mvec<T, N> cross(const mvec<T, N> &a, const mvec<T, N> &b) {
   return a.cross(b);
 }
 template <FloatingPoint T, std::size_t N>
@@ -410,13 +395,8 @@ mvec<T, N> sqrt(const mvec<T, N> &a) {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-bool approx_equal_absolute(const mvec<T, N> &a, const mvec<T, N> &b, T epsilon) {
-  return a.approx_equal_absolute(b, epsilon);
-}
-template <FloatingPoint T, std::size_t N>
-  requires(N > 0)
-bool approx_equal_relative(const mvec<T, N> &a, const mvec<T, N> &b, T epsilon) {
-  return a.approx_equal_relative(b, epsilon);
+bool approx_equal(const mvec<T, N> &a, const mvec<T, N> &b, T epsilon) {
+  return a.approx_equal(b, epsilon);
 }
 template <FloatingPoint T> bool is_nan(T value) { return std::isnan(value); }
 template <FloatingPoint T> bool is_infinite(T value) { return std::isinf(value); }
@@ -438,7 +418,7 @@ bool is_finite(const mvec<T, N> &a) {
 }
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
-bool is_zero(const mvec<T, N> &a) {
+constexpr bool is_zero(const mvec<T, N> &a) {
   return a.is_zero();
 }
 template <FloatingPoint T, std::size_t N>
