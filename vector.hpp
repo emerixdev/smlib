@@ -1,5 +1,5 @@
-#ifndef SMLIB_H
-#define SMLIB_H
+#pragma once
+#include "concepts.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -7,12 +7,9 @@
 #include <cstddef>
 #include <ostream>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 
 namespace smlib {
-template <typename T>
-concept FloatingPoint = std::floating_point<T>;
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 class mvec {
@@ -22,8 +19,8 @@ private:
 public:
   constexpr mvec() noexcept = default;
   constexpr explicit mvec(T value) noexcept { std::fill(data_.begin(), data_.end(), value); }
-  template <typename... U>
   // variadic constructor, no idea how it works but it works
+  template <typename... U>
     requires(sizeof...(U) == N && (std::convertible_to<U, T> && ...))
   constexpr mvec(U &&...values) noexcept : data_{static_cast<T>(std::forward<U>(values))...} {}
 
@@ -31,6 +28,8 @@ public:
   constexpr const T *data() const noexcept { return data_.data(); }
   constexpr T &operator[](std::size_t index) noexcept { return data_[index]; }
   constexpr const T &operator[](std::size_t index) const noexcept { return data_[index]; }
+  constexpr T &at(std::size_t index) { return data_.at(index); }
+  constexpr const T &at(std::size_t index) const { return data_.at(index); };
   constexpr mvec<T, N> &operator+=(const mvec<T, N> &a) noexcept;
   constexpr mvec<T, N> &operator-=(const mvec<T, N> &a) noexcept;
   constexpr mvec<T, N> &operator*=(T scalar) noexcept;
@@ -45,8 +44,6 @@ public:
   constexpr bool operator!=(const mvec<T, N> &a) const noexcept { return data_ != a.data_; }
   constexpr std::size_t size() const noexcept { return N; }
   constexpr void fill(T value) noexcept { std::fill(begin(), end(), value); }
-  constexpr T &at(std::size_t index) { return data_.at(index); }
-  constexpr const T &at(std::size_t index) const { return data_.at(index); };
   constexpr T &x() noexcept { return data_[0]; }
   constexpr const T &x() const noexcept { return data_[0]; }
   constexpr T &y() noexcept
@@ -114,21 +111,6 @@ public:
   bool is_near_zero(T epsilon) const;
 };
 
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0, N > 0)
-class mmat {
-private:
-  std::array<T, M * N> data_;
-
-public:
-  mmat(std::size_t rows, std::size_t cols);
-  mmat(std::size_t rows, std::size_t cols, const T &value);
-  mmat(std::initializer_list<std::initializer_list<T>> list);
-  T *data();
-  const T *data() const;
-  T &operator()(std::size_t row, std::size_t col);
-  const T &operator()(std::size_t row, std::size_t col) const;
-};
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator+=(const mvec<T, N> &a) noexcept {
@@ -427,5 +409,3 @@ bool is_near_zero(const mvec<T, N> &a, T epsilon) {
   return a.is_near_zero(epsilon);
 }
 } // namespace smlib
-
-#endif
