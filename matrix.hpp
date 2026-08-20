@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstddef>
 #include <initializer_list>
-#include <iostream>
 #include <ostream>
 #include <stdexcept>
 namespace smlib {
@@ -87,7 +86,7 @@ template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> &mmat<T, M, N>::operator+=(const mmat<T, M, N> &a) noexcept {
   for (std::size_t i = 0; i < size(); ++i) {
-    data_[i] += data_[i];
+    data_[i] += a.data_[i];
   }
   return *this;
 }
@@ -95,7 +94,7 @@ template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> &mmat<T, M, N>::operator-=(const mmat<T, M, N> &a) noexcept {
   for (std::size_t i = 0; i < size(); ++i) {
-    data_[i] -= data_[i];
+    data_[i] -= a.data_[i];
   }
   return *this;
 }
@@ -143,7 +142,6 @@ constexpr mmat<T, M, N> mmat<T, M, N>::operator/(T scalar) const noexcept {
   out /= scalar;
   return out;
 }
-
 template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 mmat<T, M, N> mmat<T, M, N>::abs() const noexcept {
@@ -189,6 +187,50 @@ mmat<T, M, N> mmat<T, M, N>::sqrt() const noexcept {
   }
   return out;
 }
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+bool mmat<T, M, N>::approx_equal(const mmat<T, M, N> &a, T epsilon) const {
+  if (epsilon < T{0})
+    throw std::invalid_argument("Epsilon cannot be negative!");
+  for (std::size_t i = 0; i < size(); ++i) {
+    T lhs = (*this)[i];
+    T rhs = a[i];
+    if (std::isnan(lhs) || std::isnan(rhs))
+      return false;
+    if (lhs == rhs)
+      continue;
+    if (std::abs(lhs - rhs) > epsilon)
+      return false;
+  }
+  return true;
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+bool mmat<T, M, N>::has_nan() const noexcept {
+  return std::any_of(begin(), end(), [](T x) { return std::isnan(x); });
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+bool mmat<T, M, N>::has_infinity() const noexcept {
+  return std::any_of(begin(), end(), [](T x) { return std::isinf(x); });
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+bool mmat<T, M, N>::is_finite() const noexcept {
+  return std::all_of(begin(), end(), [](T x) { return std::isfinite(x); });
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+constexpr bool mmat<T, M, N>::is_zero() const noexcept {
+  return std::all_of(begin(), end(), [](T x) { return x == 0; });
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+bool mmat<T, M, N>::is_near_zero(T epsilon) const {
+  if (epsilon < T{0})
+    throw std::invalid_argument("Epsilon cannot be negative!");
+  return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
+}
 
 template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
@@ -206,10 +248,34 @@ std::ostream &operator<<(std::ostream &os, const mmat<T, M, N> &a) {
   os << "}";
   return os;
 }
-
 template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-constexpr mmat<T, M, N> operator*(T scalar, mmat<T, M, N> &a) {
+constexpr mmat<T, M, N> operator*(T scalar, const mmat<T, M, N> &a) {
   return a * scalar;
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+mmat<T, M, N> abs(const mmat<T, M, N> &a) {
+  return a.abs();
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+mmat<T, M, N> floor(const mmat<T, M, N> &a) {
+  return a.floor();
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+mmat<T, M, N> ceil(const mmat<T, M, N> &a) {
+  return a.ceil();
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+mmat<T, M, N> round(const mmat<T, M, N> &a) {
+  return a.round();
+}
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+mmat<T, M, N> sqrt(const mmat<T, M, N> &a) {
+  return a.sqrt();
 }
 } // namespace smlib
