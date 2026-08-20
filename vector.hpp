@@ -30,6 +30,18 @@ public:
   constexpr const T &operator[](std::size_t index) const noexcept { return data_[index]; }
   constexpr T &at(std::size_t index) { return data_.at(index); }
   constexpr const T &at(std::size_t index) const { return data_.at(index); };
+  constexpr auto begin() noexcept { return data_.begin(); }
+  constexpr auto end() noexcept { return data_.end(); }
+  constexpr auto begin() const noexcept { return data_.begin(); }
+  constexpr auto end() const noexcept { return data_.end(); }
+  constexpr auto cbegin() const noexcept { return data_.cbegin(); }
+  constexpr auto cend() const noexcept { return data_.cend(); }
+  constexpr auto rbegin() noexcept { return data_.rbegin(); }
+  constexpr auto rend() noexcept { return data_.rend(); }
+  constexpr auto rbegin() const noexcept { return data_.rbegin(); }
+  constexpr auto rend() const noexcept { return data_.rend(); }
+  constexpr auto crbegin() const noexcept { return data_.crbegin(); }
+  constexpr auto crend() const noexcept { return data_.crend(); }
   constexpr mvec<T, N> &operator+=(const mvec<T, N> &a) noexcept;
   constexpr mvec<T, N> &operator-=(const mvec<T, N> &a) noexcept;
   constexpr mvec<T, N> &operator*=(T scalar) noexcept;
@@ -76,18 +88,6 @@ public:
   {
     return data_[3];
   }
-  constexpr auto begin() noexcept { return data_.begin(); }
-  constexpr auto end() noexcept { return data_.end(); }
-  constexpr auto begin() const noexcept { return data_.begin(); }
-  constexpr auto end() const noexcept { return data_.end(); }
-  constexpr auto cbegin() const noexcept { return data_.cbegin(); }
-  constexpr auto cend() const noexcept { return data_.cend(); }
-  constexpr auto rbegin() noexcept { return data_.rbegin(); }
-  constexpr auto rend() noexcept { return data_.rend(); }
-  constexpr auto rbegin() const noexcept { return data_.rbegin(); }
-  constexpr auto rend() const noexcept { return data_.rend(); }
-  constexpr auto crbegin() const noexcept { return data_.crbegin(); }
-  constexpr auto crend() const noexcept { return data_.crend(); }
   constexpr T dot(const mvec<T, N> &a) const noexcept;
   T magnitude() const noexcept;
   constexpr T magnitude_squared() const noexcept { return dot(*this); };
