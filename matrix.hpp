@@ -164,12 +164,18 @@ constexpr mmat<T, M, N> mmat<T, M, N>::operator/(T scalar) const noexcept {
   out /= scalar;
   return out;
 }
-/*
 template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 template <std::size_t P>
-constexpr mmat<T, M, P> mmat<T, M, N>::operator*(const mmat<T, N, P> &a) const noexcept {}
-*/
+constexpr mmat<T, M, P> mmat<T, M, N>::operator*(const mmat<T, N, P> &a) const noexcept {
+  mmat<T, M, P> out;
+  for (std::size_t row = 0; row < M; row++) {
+    for (std::size_t col = 0; col < P; col++) {
+      out(row, col) = dot((*this).row(row), (a.col(col)));
+    }
+  }
+  return out;
+}
 template <FloatingPoint T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 mmat<T, M, N> mmat<T, M, N>::abs() const noexcept {
