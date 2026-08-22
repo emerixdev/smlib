@@ -10,6 +10,9 @@
 #include <utility>
 
 namespace smlib {
+template <FloatingPoint T, std::size_t M, std::size_t N>
+  requires(M > 0 && N > 0)
+class mmat;
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 class mvec {
@@ -109,6 +112,8 @@ public:
   bool is_finite() const noexcept;
   constexpr bool is_zero() const noexcept;
   bool is_near_zero(T epsilon) const;
+  constexpr mmat<T, 1, N> to_row_mat() const noexcept;
+  constexpr mmat<T, N, 1> to_col_mat() const noexcept;
 };
 
 template <FloatingPoint T, std::size_t N>
@@ -307,7 +312,6 @@ bool mvec<T, N>::is_near_zero(T epsilon) const {
     throw std::invalid_argument("Epsilon cannot be negative!");
   return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
 }
-
 template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 std::ostream &operator<<(std::ostream &os, const mvec<T, N> &a) {
