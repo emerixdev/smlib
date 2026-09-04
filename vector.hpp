@@ -10,10 +10,10 @@
 #include <utility>
 
 namespace smlib {
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 class mmat;
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 class mvec {
 private:
@@ -92,31 +92,46 @@ public:
     return data_[3];
   }
   constexpr T dot(const mvec<T, N> &a) const noexcept;
-  T magnitude() const noexcept;
+  T magnitude() const noexcept
+    requires std::floating_point<T>;
   constexpr T magnitude_squared() const noexcept { return dot(*this); };
   constexpr T sum() const noexcept;
   constexpr T min() const noexcept { return *std::min_element(begin(), end()); }
   constexpr T max() const noexcept { return *std::max_element(begin(), end()); }
-  mvec<T, N> unit() const;
-  void normalize() { *this = unit(); };
+  mvec<T, N> unit() const
+    requires std::floating_point<T>;
+  void normalize()
+    requires std::floating_point<T>
+  {
+    *this = unit();
+  }
   constexpr mvec<T, N> cross(const mvec<T, N> &a) const noexcept
     requires(N == 3);
-  mvec<T, N> abs() const noexcept;
-  mvec<T, N> floor() const noexcept;
-  mvec<T, N> ceil() const noexcept;
-  mvec<T, N> round() const noexcept;
-  mvec<T, N> sqrt() const noexcept;
-  bool approx_equal(const mvec<T, N> &a, T epsilon) const;
-  bool has_nan() const noexcept;
-  bool has_infinity() const noexcept;
-  bool is_finite() const noexcept;
+  mvec<T, N> abs() const;
+  mvec<T, N> floor() const noexcept
+    requires std::floating_point<T>;
+  mvec<T, N> ceil() const noexcept
+    requires std::floating_point<T>;
+  mvec<T, N> round() const noexcept
+    requires std::floating_point<T>;
+  mvec<T, N> sqrt() const noexcept
+    requires std::floating_point<T>;
+  bool approx_equal(const mvec<T, N> &a, T epsilon) const
+    requires std::floating_point<T>;
+  bool has_nan() const noexcept
+    requires std::floating_point<T>;
+  bool has_infinity() const noexcept
+    requires std::floating_point<T>;
+  bool is_finite() const noexcept
+    requires std::floating_point<T>;
   constexpr bool is_zero() const noexcept;
-  bool is_near_zero(T epsilon) const;
+  bool is_near_zero(T epsilon) const
+    requires std::floating_point<T>;
   constexpr mmat<T, 1, N> to_row_mat() const noexcept;
   constexpr mmat<T, N, 1> to_col_mat() const noexcept;
 };
 
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator+=(const mvec<T, N> &a) noexcept {
   for (std::size_t i = 0; i < N; ++i) {
@@ -124,7 +139,7 @@ constexpr mvec<T, N> &mvec<T, N>::operator+=(const mvec<T, N> &a) noexcept {
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator-=(const mvec<T, N> &a) noexcept {
   for (std::size_t i = 0; i < N; ++i) {
@@ -132,7 +147,7 @@ constexpr mvec<T, N> &mvec<T, N>::operator-=(const mvec<T, N> &a) noexcept {
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator*=(T scalar) noexcept {
   for (auto &it : *this) {
@@ -140,7 +155,7 @@ constexpr mvec<T, N> &mvec<T, N>::operator*=(T scalar) noexcept {
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> &mvec<T, N>::operator/=(T scalar) noexcept {
   for (auto &it : *this) {
@@ -148,35 +163,35 @@ constexpr mvec<T, N> &mvec<T, N>::operator/=(T scalar) noexcept {
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::operator+(const mvec<T, N> &a) const noexcept {
   mvec<T, N> out(*this);
   out += a;
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::operator-(const mvec<T, N> &a) const noexcept {
   mvec<T, N> out(*this);
   out -= a;
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::operator*(T scalar) const noexcept {
   mvec<T, N> out(*this);
   out *= scalar;
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::operator/(T scalar) const noexcept {
   mvec<T, N> out(*this);
   out /= scalar;
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T mvec<T, N>::dot(const mvec<T, N> &a) const noexcept {
   T out = T{0};
@@ -185,9 +200,11 @@ constexpr T mvec<T, N>::dot(const mvec<T, N> &a) const noexcept {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-T mvec<T, N>::magnitude() const noexcept {
+T mvec<T, N>::magnitude() const noexcept
+  requires std::floating_point<T>
+{
   T out = T{0};
   for (auto x : *this) {
     out = std::hypot(out, x);
@@ -195,7 +212,7 @@ T mvec<T, N>::magnitude() const noexcept {
   return out;
 }
 
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T mvec<T, N>::sum() const noexcept {
   T out = T{0};
@@ -204,15 +221,19 @@ constexpr T mvec<T, N>::sum() const noexcept {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::unit() const {
+mvec<T, N> mvec<T, N>::unit() const
+  requires std::floating_point<T>
+{
   T mag = magnitude();
   if (mag == 0)
     throw std::domain_error("Cannot normalize a zero vector!");
+  if (!std::isfinite(mag))
+    throw std::domain_error("Cannot normalize a non-finite vector!");
   return *this / mag;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> mvec<T, N>::cross(const mvec<T, N> &a) const noexcept
   requires(N == 3)
@@ -223,54 +244,64 @@ constexpr mvec<T, N> mvec<T, N>::cross(const mvec<T, N> &a) const noexcept
   out.z() = x() * a.y() - y() * a.x();
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::abs() const noexcept {
+mvec<T, N> mvec<T, N>::abs() const {
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::abs(data_[i]);
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::floor() const noexcept {
+mvec<T, N> mvec<T, N>::floor() const noexcept
+  requires std::floating_point<T>
+{
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::floor(data_[i]);
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::ceil() const noexcept {
+mvec<T, N> mvec<T, N>::ceil() const noexcept
+  requires std::floating_point<T>
+{
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::ceil(data_[i]);
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::round() const noexcept {
+mvec<T, N> mvec<T, N>::round() const noexcept
+  requires std::floating_point<T>
+{
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::round(data_[i]);
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-mvec<T, N> mvec<T, N>::sqrt() const noexcept {
+mvec<T, N> mvec<T, N>::sqrt() const noexcept
+  requires std::floating_point<T>
+{
   mvec<T, N> out;
   for (std::size_t i = 0; i < N; ++i) {
     out[i] = std::sqrt(data_[i]);
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-bool mvec<T, N>::approx_equal(const mvec<T, N> &a, T epsilon) const {
+bool mvec<T, N>::approx_equal(const mvec<T, N> &a, T epsilon) const
+  requires std::floating_point<T>
+{
   if (epsilon < T{0})
     throw std::invalid_argument("Epsilon cannot be negative!");
   for (std::size_t i = 0; i < N; ++i) {
@@ -285,34 +316,42 @@ bool mvec<T, N>::approx_equal(const mvec<T, N> &a, T epsilon) const {
   }
   return true;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-bool mvec<T, N>::has_nan() const noexcept {
+bool mvec<T, N>::has_nan() const noexcept
+  requires std::floating_point<T>
+{
   return std::any_of(begin(), end(), [](T x) { return std::isnan(x); });
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-bool mvec<T, N>::has_infinity() const noexcept {
+bool mvec<T, N>::has_infinity() const noexcept
+  requires std::floating_point<T>
+{
   return std::any_of(begin(), end(), [](T x) { return std::isinf(x); });
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-bool mvec<T, N>::is_finite() const noexcept {
+bool mvec<T, N>::is_finite() const noexcept
+  requires std::floating_point<T>
+{
   return std::all_of(begin(), end(), [](T x) { return std::isfinite(x); });
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr bool mvec<T, N>::is_zero() const noexcept {
   return std::all_of(begin(), end(), [](T x) { return x == 0; });
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
-bool mvec<T, N>::is_near_zero(T epsilon) const {
+bool mvec<T, N>::is_near_zero(T epsilon) const
+  requires std::floating_point<T>
+{
   if (epsilon < T{0})
     throw std::invalid_argument("Epsilon cannot be negative!");
   return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 std::ostream &operator<<(std::ostream &os, const mvec<T, N> &a) {
   os << "{";
@@ -324,37 +363,37 @@ std::ostream &operator<<(std::ostream &os, const mvec<T, N> &a) {
   os << "}";
   return os;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> operator*(T scalar, const mvec<T, N> &a) {
   return a * scalar;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T dot(const mvec<T, N> &a, const mvec<T, N> &b) {
   return a.dot(b);
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T sum(const mvec<T, N> &a) {
   return a.sum();
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T min(const mvec<T, N> &a) {
   return a.min();
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr T max(const mvec<T, N> &a) {
   return a.max();
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mvec<T, N> cross(const mvec<T, N> &a, const mvec<T, N> &b) {
   return a.cross(b);
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 mvec<T, N> abs(const mvec<T, N> &a) {
   return a.abs();
@@ -402,7 +441,7 @@ template <FloatingPoint T, std::size_t N>
 bool is_finite(const mvec<T, N> &a) {
   return a.is_finite();
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr bool is_zero(const mvec<T, N> &a) {
   return a.is_zero();

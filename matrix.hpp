@@ -4,19 +4,24 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 #include <initializer_list>
 #include <ostream>
 #include <stdexcept>
 namespace smlib {
 
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 class mmat {
 private:
   std::array<T, M * N> data_{};
 
 public:
+  using value_type = T;
+  using size_type = std::size_t;
+  using iterator = typename std::array<T, M * N>::iterator;
+  using const_iterator = typename std::array<T, M * N>::const_iterator;
   constexpr mmat() noexcept = default;
   constexpr explicit mmat(T value) noexcept { std::fill(data_.begin(), data_.end(), value); }
   constexpr mmat(std::initializer_list<std::initializer_list<T>> list) : data_{} {
@@ -46,7 +51,7 @@ public:
   constexpr T &at(std::size_t row, std::size_t col);
   constexpr const T &at(std::size_t row, std::size_t col) const;
   constexpr T &operator()(std::size_t row, std::size_t col) noexcept { return data_[row * N + col]; }
-  constexpr const T &operator()(std::size_t m, std::size_t n) const noexcept { return data_[m * N + n]; }
+  constexpr const T &operator()(std::size_t row, std::size_t col) const noexcept { return data_[row * N + col]; }
   constexpr auto begin() noexcept { return data_.begin(); }
   constexpr auto end() noexcept { return data_.end(); }
   constexpr auto begin() const noexcept { return data_.begin(); }
@@ -63,16 +68,17 @@ public:
   constexpr const T &front() const noexcept { return data_.front(); }
   constexpr T &back() noexcept { return data_.back(); }
   constexpr const T &back() const noexcept { return data_.back(); }
+  constexpr void swap(mmat &a) noexcept { data_.swap(a.data_); }
   constexpr mvec<T, N> row(std::size_t row) const;
   constexpr mvec<T, M> col(std::size_t column) const;
   constexpr mmat<T, M, N> &operator+=(const mmat<T, M, N> &a) noexcept;
   constexpr mmat<T, M, N> &operator-=(const mmat<T, M, N> &a) noexcept;
   constexpr mmat<T, M, N> &operator*=(T scalar) noexcept;
-  constexpr mmat<T, M, N> &operator/=(T scalar) noexcept;
+  constexpr mmat<T, M, N> &operator/=(T scalar);
   constexpr mmat<T, M, N> operator+(const mmat<T, M, N> &a) const noexcept;
   constexpr mmat<T, M, N> operator-(const mmat<T, M, N> &a) const noexcept;
   constexpr mmat<T, M, N> operator*(T scalar) const noexcept;
-  constexpr mmat<T, M, N> operator/(T scalar) const noexcept;
+  constexpr mmat<T, M, N> operator/(T scalar) const;
   constexpr mmat<T, M, N> operator+() const noexcept { return *this; }
   constexpr mmat<T, M, N> operator-() const noexcept { return *this * T{-1}; }
   constexpr bool operator==(const mmat<T, M, N> &a) const noexcept { return data_ == a.data_; }
@@ -81,36 +87,36 @@ public:
   constexpr mvec<T, M> operator*(const mvec<T, N> &a) const noexcept;
   constexpr std::size_t size() const noexcept { return data_.size(); }
   constexpr void fill(T value) noexcept { std::fill(begin(), end(), value); }
-  mmat<T, M, N> abs_ew() const noexcept;   // element-wise
-  mmat<T, M, N> floor_ew() const noexcept; // element-wise
-  mmat<T, M, N> ceil_ew() const noexcept;  // element-wise
-  mmat<T, M, N> round_ew() const noexcept; // element-wise
-  mmat<T, M, N> sqrt_ew() const noexcept;  // element-wise
-  bool approx_equal(const mmat<T, M, N> &a, T epsilon) const;
-  bool has_nan() const noexcept;
-  bool has_infinity() const noexcept;
-  bool is_finite() const noexcept;
+  bool approx_equal(const mmat<T, M, N> &a, T epsilon) const
+    requires std::floating_point<T>;
+  bool has_nan() const noexcept
+    requires std::floating_point<T>;
+  bool has_infinity() const noexcept
+    requires std::floating_point<T>;
+  bool is_finite() const noexcept
+    requires std::floating_point<T>;
   constexpr bool is_zero() const noexcept;
-  bool is_near_zero(T epsilon) const;
+  bool is_near_zero(T epsilon) const
+    requires std::floating_point<T>;
   constexpr mmat<T, N, M> transpose() const noexcept;
   constexpr mvec<T, M> to_vec() const noexcept
     requires(N == 1);
 };
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr T &mmat<T, M, N>::at(std::size_t row, std::size_t col) {
   if (row >= M || col >= N)
     throw std::out_of_range("row or col out of range: mmat::at(row, col)!");
   return data_[row * N + col];
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr const T &mmat<T, M, N>::at(std::size_t row, std::size_t col) const {
   if (row >= M || col >= N)
     throw std::out_of_range("row or col out of range: mmat::at(row, col)!");
   return data_[row * N + col];
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mvec<T, N> mmat<T, M, N>::row(std::size_t row) const {
   if (row >= M)
@@ -121,7 +127,7 @@ constexpr mvec<T, N> mmat<T, M, N>::row(std::size_t row) const {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mvec<T, M> mmat<T, M, N>::col(std::size_t col) const {
   if (col >= N)
@@ -132,7 +138,7 @@ constexpr mvec<T, M> mmat<T, M, N>::col(std::size_t col) const {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> &mmat<T, M, N>::operator+=(const mmat<T, M, N> &a) noexcept {
   for (std::size_t i = 0; i < size(); ++i) {
@@ -140,7 +146,7 @@ constexpr mmat<T, M, N> &mmat<T, M, N>::operator+=(const mmat<T, M, N> &a) noexc
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> &mmat<T, M, N>::operator-=(const mmat<T, M, N> &a) noexcept {
   for (std::size_t i = 0; i < size(); ++i) {
@@ -148,7 +154,7 @@ constexpr mmat<T, M, N> &mmat<T, M, N>::operator-=(const mmat<T, M, N> &a) noexc
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> &mmat<T, M, N>::operator*=(T scalar) noexcept {
   for (auto &it : (*this)) {
@@ -156,43 +162,43 @@ constexpr mmat<T, M, N> &mmat<T, M, N>::operator*=(T scalar) noexcept {
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-constexpr mmat<T, M, N> &mmat<T, M, N>::operator/=(T scalar) noexcept {
+constexpr mmat<T, M, N> &mmat<T, M, N>::operator/=(T scalar) {
   for (auto &it : (*this)) {
     it /= scalar;
   }
   return *this;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> mmat<T, M, N>::operator+(const mmat<T, M, N> &a) const noexcept {
   mmat<T, M, N> out = *this;
   out += a;
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> mmat<T, M, N>::operator-(const mmat<T, M, N> &a) const noexcept {
   mmat<T, M, N> out = *this;
   out -= a;
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> mmat<T, M, N>::operator*(T scalar) const noexcept {
   mmat<T, M, N> out = *this;
   out *= scalar;
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-constexpr mmat<T, M, N> mmat<T, M, N>::operator/(T scalar) const noexcept {
+constexpr mmat<T, M, N> mmat<T, M, N>::operator/(T scalar) const {
   mmat<T, M, N> out = *this;
   out /= scalar;
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 template <std::size_t P>
 constexpr mmat<T, M, P> mmat<T, M, N>::operator*(const mmat<T, N, P> &a) const noexcept {
@@ -207,7 +213,7 @@ constexpr mmat<T, M, P> mmat<T, M, N>::operator*(const mmat<T, N, P> &a) const n
   return out;
 }
 
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mvec<T, M> mmat<T, M, N>::operator*(const mvec<T, N> &a) const noexcept {
   mvec<T, M> out;
@@ -218,98 +224,61 @@ constexpr mvec<T, M> mmat<T, M, N>::operator*(const mvec<T, N> &a) const noexcep
   }
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-mmat<T, M, N> mmat<T, M, N>::abs_ew() const noexcept {
-  mmat<T, M, N> out = (*this);
-  for (auto &it : out) {
-    it = std::abs(it);
-  }
-  return out;
-}
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0 && N > 0)
-mmat<T, M, N> mmat<T, M, N>::floor_ew() const noexcept {
-  mmat<T, M, N> out = (*this);
-  for (auto &it : out) {
-    it = std::floor(it);
-  }
-  return out;
-}
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0 && N > 0)
-mmat<T, M, N> mmat<T, M, N>::ceil_ew() const noexcept {
-  mmat<T, M, N> out = (*this);
-  for (auto &it : out) {
-    it = std::ceil(it);
-  }
-  return out;
-}
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0 && N > 0)
-mmat<T, M, N> mmat<T, M, N>::round_ew() const noexcept {
-  mmat<T, M, N> out = (*this);
-  for (auto &it : out) {
-    it = std::round(it);
-  }
-  return out;
-}
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0 && N > 0)
-mmat<T, M, N> mmat<T, M, N>::sqrt_ew() const noexcept {
-  mmat<T, M, N> out = (*this);
-  for (auto &it : out) {
-    it = std::sqrt(it);
-  }
-  return out;
-}
-template <FloatingPoint T, std::size_t M, std::size_t N>
-  requires(M > 0 && N > 0)
-bool mmat<T, M, N>::approx_equal(const mmat<T, M, N> &a, T epsilon) const {
-  if (epsilon < T{0})
-    throw std::invalid_argument("Epsilon cannot be negative!");
+bool mmat<T, M, N>::approx_equal(const mmat<T, M, N> &a, T epsilon) const
+  requires std::floating_point<T>
+{
+  if (epsilon < T{0} || std::isnan(epsilon))
+    throw std::invalid_argument("Invalid epsilon!");
   for (std::size_t i = 0; i < size(); ++i) {
     T lhs = (*this)[i];
     T rhs = a[i];
     if (lhs == rhs)
       continue;
-    if (std::isnan(lhs) || std::isnan(rhs))
-      return false;
-    if (std::isinf(lhs) || std::isinf(rhs))
+    if (!std::isfinite(lhs) || !std::isfinite(rhs))
       return false;
     if (std::abs(lhs - rhs) > epsilon * std::max(T{1}, std::max(std::abs(lhs), std::abs(rhs))))
       return false;
   }
   return true;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-bool mmat<T, M, N>::has_nan() const noexcept {
+bool mmat<T, M, N>::has_nan() const noexcept
+  requires std::floating_point<T>
+{
   return std::any_of(begin(), end(), [](T x) { return std::isnan(x); });
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-bool mmat<T, M, N>::has_infinity() const noexcept {
+bool mmat<T, M, N>::has_infinity() const noexcept
+  requires std::floating_point<T>
+{
   return std::any_of(begin(), end(), [](T x) { return std::isinf(x); });
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-bool mmat<T, M, N>::is_finite() const noexcept {
+bool mmat<T, M, N>::is_finite() const noexcept
+  requires std::floating_point<T>
+{
   return std::all_of(begin(), end(), [](T x) { return std::isfinite(x); });
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr bool mmat<T, M, N>::is_zero() const noexcept {
   return std::all_of(begin(), end(), [](T x) { return x == 0; });
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-bool mmat<T, M, N>::is_near_zero(T epsilon) const {
-  if (epsilon < T{0})
-    throw std::invalid_argument("Epsilon cannot be negative!");
+bool mmat<T, M, N>::is_near_zero(T epsilon) const
+  requires std::floating_point<T>
+{
+  if (epsilon < T{0} || std::isnan(epsilon))
+    throw std::invalid_argument("Invalid epsilon!");
   return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, N, M> mmat<T, M, N>::transpose() const noexcept {
   mmat<T, N, M> out;
@@ -320,7 +289,7 @@ constexpr mmat<T, N, M> mmat<T, M, N>::transpose() const noexcept {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 std::ostream &operator<<(std::ostream &os, const mmat<T, M, N> &a) {
   os << "{";
@@ -336,34 +305,62 @@ std::ostream &operator<<(std::ostream &os, const mmat<T, M, N> &a) {
   os << "}";
   return os;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mmat<T, M, N> operator*(T scalar, const mmat<T, M, N> &a) {
   return a * scalar;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 mmat<T, M, N> abs_ew(const mmat<T, M, N> &a) {
-  return a.abs_ew();
+  mmat<T, M, N> out = a;
+  for (auto &it : out) {
+    it = std::abs(it);
+  }
+  return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-mmat<T, M, N> floor_ew(const mmat<T, M, N> &a) {
-  return a.floor_ew();
+mmat<T, M, N> floor_ew(const mmat<T, M, N> &a)
+  requires std::floating_point<T>
+{
+  mmat<T, M, N> out = a;
+  for (auto &it : out) {
+    it = std::floor(it);
+  }
+  return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-mmat<T, M, N> ceil_ew(const mmat<T, M, N> &a) {
-  return a.ceil_ew();
+mmat<T, M, N> ceil_ew(const mmat<T, M, N> &a)
+  requires std::floating_point<T>
+{
+  mmat<T, M, N> out = a;
+  for (auto &it : out) {
+    it = std::ceil(it);
+  }
+  return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-mmat<T, M, N> round_ew(const mmat<T, M, N> &a) {
-  return a.round_ew();
+mmat<T, M, N> round_ew(const mmat<T, M, N> &a)
+  requires std::floating_point<T>
+{
+  mmat<T, M, N> out = a;
+  for (auto &it : out) {
+    it = std::round(it);
+  }
+  return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-mmat<T, M, N> sqrt_ew(const mmat<T, M, N> &a) {
-  return a.sqrt_ew();
+mmat<T, M, N> sqrt_ew(const mmat<T, M, N> &a)
+  requires std::floating_point<T>
+{
+  mmat<T, M, N> out = a;
+  for (auto &it : out) {
+    it = std::sqrt(it);
+  }
+  return out;
 }
 } // namespace smlib

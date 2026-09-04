@@ -2,7 +2,7 @@
 #include "matrix.hpp"
 
 namespace smlib {
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mmat<T, 1, N> mvec<T, N>::to_row_mat() const noexcept {
   mmat<T, 1, N> out;
@@ -11,7 +11,7 @@ constexpr mmat<T, 1, N> mvec<T, N>::to_row_mat() const noexcept {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t N>
+template <Arithmetic T, std::size_t N>
   requires(N > 0)
 constexpr mmat<T, N, 1> mvec<T, N>::to_col_mat() const noexcept {
   mmat<T, N, 1> out;
@@ -20,7 +20,7 @@ constexpr mmat<T, N, 1> mvec<T, N>::to_col_mat() const noexcept {
   }
   return out;
 }
-template <FloatingPoint T, std::size_t M, std::size_t N>
+template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 constexpr mvec<T, M> mmat<T, M, N>::to_vec() const noexcept
   requires(N == 1)
