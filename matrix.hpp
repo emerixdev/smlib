@@ -84,7 +84,8 @@ public:
   constexpr bool operator==(const mmat<T, M, N> &a) const noexcept { return data_ == a.data_; }
   constexpr bool operator!=(const mmat<T, M, N> &a) const noexcept { return data_ != a.data_; }
   template <std::size_t P> constexpr mmat<T, M, P> operator*(const mmat<T, N, P> &a) const noexcept;
-  constexpr mvec<T, M> operator*(const mvec<T, N> &a) const noexcept;
+  // constexpr mvec<T, M> operator*(const mvec<T, N> &a) const noexcept;
+  template <Arithmetic U> constexpr mvec<std::common_type_t<T, U>, M> operator*(const mvec<U, N> &a) const noexcept;
   constexpr std::size_t size() const noexcept { return data_.size(); }
   constexpr void fill(T value) noexcept { std::fill(begin(), end(), value); }
   bool approx_equal(const mmat<T, M, N> &a, T epsilon) const
@@ -212,18 +213,31 @@ constexpr mmat<T, M, P> mmat<T, M, N>::operator*(const mmat<T, N, P> &a) const n
   }
   return out;
 }
-
 template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
-constexpr mvec<T, M> mmat<T, M, N>::operator*(const mvec<T, N> &a) const noexcept {
-  mvec<T, M> out;
+template <Arithmetic U>
+constexpr mvec<std::common_type_t<T, U>, M> mmat<T, M, N>::operator*(const mvec<U, N> &a) const noexcept {
+  using R = std::common_type_t<T, U>;
+
+  mvec<R, M> out;
   for (std::size_t i = 0; i < M; ++i) {
     for (std::size_t k = 0; k < N; ++k) {
-      out[i] += (*this)(i, k) * a[k];
+      out[i] += static_cast<R>((*this)(i, k)) * static_cast<R>(a[k]);
     }
   }
   return out;
 }
+// template <Arithmetic T, std::size_t M, std::size_t N>
+//   requires(M > 0 && N > 0)
+// constexpr mvec<T, M> mmat<T, M, N>::operator*(const mvec<T, N> &a) const noexcept {
+//   mvec<T, M> out;
+//   for (std::size_t i = 0; i < M; ++i) {
+//     for (std::size_t k = 0; k < N; ++k) {
+//       out[i] += (*this)(i, k) * a[k];
+//     }
+//   }
+//   return out;
+// }
 template <Arithmetic T, std::size_t M, std::size_t N>
   requires(M > 0 && N > 0)
 bool mmat<T, M, N>::approx_equal(const mmat<T, M, N> &a, T epsilon) const
@@ -361,6 +375,14 @@ mmat<T, M, N> sqrt_ew(const mmat<T, M, N> &a)
   for (auto &it : out) {
     it = std::sqrt(it);
   }
+  return out;
+}
+template <Arithmetic T, std::size_t N>
+  requires(N > 0)
+mmat<T, N, N> gen_identity_mat() {
+  mmat<T, N, N> out(0);
+  for (int i = 0; i < N; ++i)
+    out(i, i) = 1;
   return out;
 }
 } // namespace smlib
