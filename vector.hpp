@@ -5,7 +5,11 @@
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <format>
+#include <iomanip>
+#include <ios>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -129,6 +133,7 @@ public:
     requires std::floating_point<T>;
   constexpr mmat<T, 1, N> to_row_mat() const noexcept;
   constexpr mmat<T, N, 1> to_col_mat() const noexcept;
+  std::string to_string(int floating_points = -1) const noexcept;
 };
 
 template <Arithmetic T, std::size_t N>
@@ -350,6 +355,21 @@ bool mvec<T, N>::is_near_zero(T epsilon) const
   if (epsilon < T{0})
     throw std::invalid_argument("Epsilon cannot be negative!");
   return std::all_of(begin(), end(), [epsilon](T x) { return std::abs(x) <= epsilon; });
+}
+template <Arithmetic T, std::size_t N>
+  requires(N > 0)
+std::string mvec<T, N>::to_string(int floating_points) const noexcept {
+  std::stringstream ss;
+  ss << "{";
+  for (std::size_t i = 0; i < N; ++i) {
+    if (floating_points >= 0)
+      ss << std::fixed << std::setprecision(floating_points) << (*this)[i];
+    else ss<<(*this)[i];
+    if (i < N - 1)
+      ss << ", ";
+  }
+  ss << "}";
+  return ss.str();
 }
 template <Arithmetic T, std::size_t N>
   requires(N > 0)

@@ -378,11 +378,39 @@ mmat<T, M, N> sqrt_ew(const mmat<T, M, N> &a)
   return out;
 }
 template <Arithmetic T, std::size_t N>
-  requires(N > 0)
+  requires(N > 1)
 mmat<T, N, N> gen_identity_mat() {
   mmat<T, N, N> out(0);
-  for (int i = 0; i < N; ++i)
+  for (std::size_t i = 0; i < N; ++i)
     out(i, i) = 1;
   return out;
+}
+template <Arithmetic T, std::size_t N>
+  requires(N > 1)
+mmat<T, N, N> gen_translation_mat(mvec<T, N - 1> vec) {
+  mmat<T, N, N> out = gen_identity_mat<T, N>();
+  for (std::size_t i = 0; i < N - 1; ++i)
+    out(i, N - 1) = vec[i];
+  return out;
+}
+template <Arithmetic T, std::size_t N>
+  requires(N > 1)
+mmat<T, N, N> gen_scaling_mat(mvec<T, N - 1> vec) {
+  mmat<T, N, N> out = gen_identity_mat<T, N>();
+  for (std::size_t i = 0; i < N - 1; ++i)
+    out(i, i) = vec[i];
+  return out;
+}
+template <Arithmetic T, std::size_t N>
+  requires(N > 1)
+mmat<T, N, N> gen_rotation_mat(float theta, mvec<T, N - 1> rotation_axis) {
+  mmat<T, N, N> out = gen_identity_mat<T, N>();
+  //R_x
+  mmat<T, N, N> rot_x = gen_identity_mat<T, N>();
+  rot_x(1, 1)=cos(theta);
+  rot_x(2, 1)=sin(theta);
+  rot_x(1, 2)=-sin(theta);
+  rot_x(2, 2)=cos(theta);
+  return rot_x;
 }
 } // namespace smlib

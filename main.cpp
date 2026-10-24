@@ -3,16 +3,18 @@
 #include "vector_matrix.hpp"
 #include <assert.h>
 #include <iostream>
+#include <numbers>
 int main(int argc, char *argv[]) {
-  smlib::mmat<int, 4, 4> trans(0);
   smlib::mvec<float, 4> vec({1, 2, 4, 1});
-  trans=smlib::gen_identity_mat<int, 4>();
-  trans(0, 3)=4;
-  trans(1, 3)=2;
-  trans(2, 3)=3;
-  std::cout<<"trans matrix: \n"<<trans<<"\n\n";
-  std::cout<<"trans*vec:\n"<<trans*vec<<"\n";
-  
+  vec*=1.7144;
+  std::cout<<vec<<"\n";
+  std::cout<<vec.to_string(2)<<"\n";
+  std::cout<<vec.to_string(1)<<"\n";
+  std::cout<<vec.to_string(0)<<"\n";
+  std::cout<<vec.to_string(-1)<<"\n";
+  std::cout<<vec.to_string(-2)<<"\n";
+  std::cout<<vec.to_string()<<"\n";
+
 
   return 0;
 }

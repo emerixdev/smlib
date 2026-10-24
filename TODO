@@ -1,2 +1,1 @@
-Add approx_equal(T epsilon) which combines absolute and relative approx_equal
-Add matricies
+Add stuff like gen_trans_mat etc. something like GLM
