@@ -133,7 +133,7 @@ public:
     requires std::floating_point<T>;
   constexpr mmat<T, 1, N> to_row_mat() const noexcept;
   constexpr mmat<T, N, 1> to_col_mat() const noexcept;
-  std::string to_string(int floating_points = -1) const noexcept;
+  std::string to_string(bool pretty = 1, int floating_points = -1) const noexcept;
 };
 
 template <Arithmetic T, std::size_t N>
@@ -358,17 +358,29 @@ bool mvec<T, N>::is_near_zero(T epsilon) const
 }
 template <Arithmetic T, std::size_t N>
   requires(N > 0)
-std::string mvec<T, N>::to_string(int floating_points) const noexcept {
+std::string mvec<T, N>::to_string(bool pretty, int floating_points) const noexcept {
   std::stringstream ss;
-  ss << "{";
-  for (std::size_t i = 0; i < N; ++i) {
-    if (floating_points >= 0)
-      ss << std::fixed << std::setprecision(floating_points) << (*this)[i];
-    else ss<<(*this)[i];
-    if (i < N - 1)
-      ss << ", ";
+  if (pretty) {
+    ss << "{";
+    for (std::size_t i = 0; i < N; ++i) {
+      if (floating_points >= 0)
+        ss << std::fixed << std::setprecision(floating_points) << (*this)[i];
+      else
+        ss << (*this)[i];
+      if (i < N - 1)
+        ss << ", ";
+    }
+    ss << "}";
+  } else {
+    for (std::size_t i = 0; i < N; ++i) {
+      if (floating_points >= 0)
+        ss << std::fixed << std::setprecision(floating_points) << (*this)[i];
+      else
+        ss << (*this)[i];
+      if (i < N - 1)
+        ss << " ";
+    }
   }
-  ss << "}";
   return ss.str();
 }
 template <Arithmetic T, std::size_t N>
