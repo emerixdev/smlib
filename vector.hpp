@@ -8,6 +8,7 @@
 #include <format>
 #include <iomanip>
 #include <ios>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -482,5 +483,13 @@ template <FloatingPoint T, std::size_t N>
   requires(N > 0)
 bool is_near_zero(const mvec<T, N> &a, T epsilon) {
   return a.is_near_zero(epsilon);
+}
+template <Arithmetic T_in, Arithmetic T_out, std::size_t N> requires(N>0 && std::convertible_to<T_in, T_out>)
+mvec<T_out,N> cast(mvec<T_in, N> in){
+   mvec<T_out, N> out;
+  for(size_t i=0; i<N; ++i){
+    out[i]=in[i];
+  }
+  return out;
 }
 } // namespace smlib
