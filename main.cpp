@@ -8,8 +8,11 @@ int main(int argc, char *argv[]) {
   smlib::mvec<float, 4> vec({1, 2, 4, 1});
   vec *= 1.714445;
   std::cout << vec << "\n";
-  // smlib::mvec<int, 4> vec1=smlib::cast<float, int>(vec);
-  smlib::cast<float, int>(vec);
+  std::cout << vec+2 << "\n";
+  std::cout << vec-4.154 << "\n";
+  vec-=2;
+  std::cout << vec << "\n";
+
   
 
   return 0;
